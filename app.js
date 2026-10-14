@@ -39,6 +39,7 @@ const FORM = {
   ],
   recommendation: {
     label: 'Recommendation',
+    hint: 'Capacity: 12 contributed talks, up to 84 posters (42 per session, two sessions) and about 6 to 10 hackathon sessions. Poster space is not scarce, so recommend Reject only for lack of quality or fit, never for space.',
     options: [
       ['talk_top', 'Talk, top 5% of submissions'],
       ['talk', 'Talk'],
@@ -184,8 +185,9 @@ function goNextUnscored() {
 }
 
 // ---------- the form ----------
-function radioGroup(key, label, options) {
+function radioGroup(key, label, options, hint) {
   const fs = el('fieldset', { class: 'choices' }, [el('legend', { text: label })]);
+  if (hint) fs.append(el('p', { class: 'q', text: hint }));
   for (const [val, text] of options) {
     fs.append(el('label', {}, [el('input', { type: 'radio', name: key, value: val }), el('span', { text })]));
   }
@@ -210,7 +212,7 @@ function buildForm() {
   f.append(el('p', { id: 'coi-flag', class: 'flag', hidden: '' }));
   const scoring = el('div', { id: 'scoring' });
   for (const c of FORM.criteria) scoring.append(criterion(c));
-  scoring.append(radioGroup('recommendation', FORM.recommendation.label, FORM.recommendation.options));
+  scoring.append(radioGroup('recommendation', FORM.recommendation.label, FORM.recommendation.options, FORM.recommendation.hint));
   scoring.append(radioGroup('confidence', FORM.confidence.label, FORM.confidence.options));
   scoring.append(el('fieldset', {}, [
     el('legend', { text: 'Notes for discussion (optional)' }),
