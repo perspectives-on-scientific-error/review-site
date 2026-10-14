@@ -3,7 +3,7 @@
 # ///
 """Create the reviewer codes and the matching sync tokens.
 
-  uv run tools/make_codes.py --n 6 --names "Anna,Ben,Cleo,Dev,Emi,Finn"   # first time
+  uv run tools/make_codes.py --names "Anna,Ben,Cleo,Dev,Emi,Finn"        # first time, one code per name
   uv run tools/make_codes.py --add 1 --names "Gus"                          # one more reviewer later
   uv run tools/make_codes.py --show                                         # print them again
 
@@ -55,7 +55,7 @@ def show(codes: dict) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--names", default="", help="comma-separated reviewer names, in order")
-    ap.add_argument("--n", type=int, default=5, help="number of reviewers to create (default 5)")
+    ap.add_argument("--n", type=int, default=0, help="number of reviewers to create (default: one per name, or 5)")
     ap.add_argument("--add", type=int, default=0, help="append this many reviewers, keeping existing codes")
     ap.add_argument("--show", action="store_true", help="print the existing codes and tokens")
     ap.add_argument("--force", action="store_true", help="replace all existing codes")
@@ -84,7 +84,8 @@ def main() -> None:
 
     if path.exists() and not a.force:
         raise SystemExit("tools/codes.json exists. Use --show to print it, --add to append a reviewer, or --force to replace all codes.")
-    codes = {f"R{i}": entry(i, names[i - 1] if i - 1 < len(names) else "") for i in range(1, a.n + 1)}
+    n = a.n or (len(names) if names else 5)
+    codes = {f"R{i}": entry(i, names[i - 1] if i - 1 < len(names) else "") for i in range(1, n + 1)}
     path.write_text(json.dumps(codes, indent=2) + "\n")
     print(f"Wrote {path} (git-ignored).\n")
     show(codes)

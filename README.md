@@ -19,7 +19,7 @@ only the code holders can read the abstracts. The codes themselves live in
 
 2. **Reviewer codes.**
    ```bash
-   uv run tools/make_codes.py --n 6 --names "Name1,Name2,Name3,Name4,Name5,Name6"
+   uv run tools/make_codes.py --names "Name1,Name2,Name3,Name4,Name5,Name6"
    ```
    Prints one code per reviewer and a `TOKENS` block. Send each reviewer their
    code privately together with the site URL. `--show` prints everything again.
