@@ -31,18 +31,27 @@ def b64(b: bytes) -> str:
     return base64.b64encode(b).decode()
 
 
+def pick_sheet(wb, sheet: str | None):
+    """The named sheet, or the sheet with the most rows (Forms exports sometimes carry extra sheets)."""
+    if sheet:
+        return wb[sheet]
+    return max(wb.worksheets, key=lambda ws: ws.max_row)
+
+
 def read_sheet(path: str, sheet: str | None):
-    wb = load_workbook(path, read_only=True, data_only=True)
-    ws = wb[sheet] if sheet else wb.worksheets[0]
+    # Normal (not read-only) mode: it scans the cells themselves instead of
+    # trusting the workbook's declared dimensions, which online exports get wrong.
+    wb = load_workbook(path, data_only=True)
+    ws = pick_sheet(wb, sheet)
     rows = ws.iter_rows(values_only=True)
-    headers = [("" if h is None else str(h).strip()) for h in next(rows)]
+    headers = [("" if h is None else str(h).strip()) for h in next(rows, ())]
     data = []
     for r in rows:
         if r is None or all(v is None or str(v).strip() == "" for v in r):
             continue
         r = list(r) + [None] * (len(headers) - len(r))
         data.append(r)
-    return headers, data
+    return headers, data, ws.title, [(w.title, w.max_row, w.max_column) for w in wb.worksheets]
 
 
 def find_col(headers: list[str], match: str) -> int:
@@ -78,8 +87,10 @@ def main() -> None:
     ap.add_argument("--codes", default=str(HERE / "codes.json"))
     a = ap.parse_args()
 
-    headers, rows = read_sheet(a.xlsx, a.sheet)
+    headers, rows, used, sheets = read_sheet(a.xlsx, a.sheet)
     if a.list_columns:
+        print("Sheets (name, rows, columns):", ", ".join(f"{n} {r}x{c}" for n, r, c in sheets))
+        print(f"Reading sheet: {used}\n")
         for i, h in enumerate(headers):
             print(f"{i:3d}  {h}")
         print(f"\n{len(rows)} data rows")
@@ -93,6 +104,10 @@ def main() -> None:
 
     id_col = find_col(headers, cols["id"])
     field_cols = [(f, find_col(headers, f["match"])) for f in cols["fields"]]
+    print(f"Sheet {used!r}: {len(rows)} rows. Columns used (edit tools/columns.json if wrong):")
+    print(f'  id            <- "{headers[id_col]}"')
+    for f, ci in field_cols:
+        print(f'  {f["key"]:<13} <- "{headers[ci]}"')
     required = [f["key"] for f in cols["fields"] if f.get("required")]
 
     subs, skipped = [], 0
