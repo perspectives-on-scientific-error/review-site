@@ -8,7 +8,7 @@ and, if configured, synced to a Google Sheet the chair owns.
 
 The submissions file in `data/` is encrypted (AES-GCM; each reviewer code
 unwraps the data key via PBKDF2), so the repository can be public and still
-only the five code holders can read the abstracts. The codes themselves live in
+only the code holders can read the abstracts. The codes themselves live in
 `tools/codes.json`, which is git-ignored. Never commit it.
 
 ## One-time setup (chair)
@@ -19,10 +19,14 @@ only the five code holders can read the abstracts. The codes themselves live in
 
 2. **Reviewer codes.**
    ```bash
-   uv run tools/make_codes.py --names "Name1,Name2,Name3,Name4,Name5"
+   uv run tools/make_codes.py --n 6 --names "Name1,Name2,Name3,Name4,Name5,Name6"
    ```
-   Prints five codes and a `TOKENS` block. Send each reviewer their code
-   privately together with the site URL. `--show` prints everything again.
+   Prints one code per reviewer and a `TOKENS` block. Send each reviewer their
+   code privately together with the site URL. `--show` prints everything again.
+   To add a reviewer later: `uv run tools/make_codes.py --add 1 --names "Name"`,
+   then rebuild the data file (step 4 or `./update.sh`) and paste the new
+   `TOKENS` block into the Apps Script and redeploy it. Existing codes keep
+   working.
 
 3. **Score sheet (recommended).** Create an empty Google Sheet, open
    Extensions > Apps Script, replace the contents with `backend/Code.gs`, paste

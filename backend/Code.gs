@@ -6,13 +6,15 @@
 // The sheet gets two tabs: "scores" (one row per reviewer and submission,
 // updated in place) and "log" (every save, append-only).
 
-// From: uv run tools/make_codes.py --show
+// One line per reviewer. From: uv run tools/make_codes.py --show
+// (re-paste and redeploy whenever a reviewer is added)
 const TOKENS = {
   R1: 'paste-token-here',
   R2: 'paste-token-here',
   R3: 'paste-token-here',
   R4: 'paste-token-here',
   R5: 'paste-token-here',
+  R6: 'paste-token-here',
 };
 
 const FIELDS = ['submission', 'coi', 'fit', 'accessibility', 'quality', 'novelty',
