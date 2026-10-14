@@ -28,7 +28,7 @@ const FORM = {
     },
     {
       key: 'quality', label: 'Scientific quality',
-      question: 'Given what the abstract says, is the work careful, and does the method or argument support the claim?',
+      question: 'Does this work seem to be of high scientific quality?',
       anchors: ['Claim not supported, or a clear flaw', 'Plausible, with open questions', 'Convincing and careful'],
     },
     {
@@ -213,7 +213,7 @@ function buildForm() {
   scoring.append(radioGroup('recommendation', FORM.recommendation.label, FORM.recommendation.options));
   scoring.append(radioGroup('confidence', FORM.confidence.label, FORM.confidence.options));
   scoring.append(el('fieldset', {}, [
-    el('legend', { text: 'Note for the programme chair (optional)' }),
+    el('legend', { text: 'Notes for discussion (optional)' }),
     el('textarea', { id: 'note', name: 'note', rows: '3', placeholder: 'Anything the scores do not capture.' }),
   ]));
   f.append(scoring);
@@ -268,7 +268,7 @@ function applyCoi(coi) {
     flag.textContent = 'Thank you. As a co-author you do not score this submission. Press Save and move on.';
   } else if (coi === 'knows') {
     flag.hidden = false;
-    flag.textContent = 'Noted. Please score anyway; the programme chair will see the flag.';
+    flag.textContent = 'Noted. Please score anyway; we will consider the flag.';
   } else {
     flag.hidden = true;
   }
