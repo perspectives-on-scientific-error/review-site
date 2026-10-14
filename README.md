@@ -1,8 +1,8 @@
 # PSE9 abstract review site
 
 A static page for the PSE9 programme committee. Reviewers sign in with a
-personal code, see one submission at a time (career stage, job type, history,
-proposed format, abstract; no names or e-mail addresses), and fill in the
+personal code, see one submission at a time (career stage, job type, proposed
+format, abstract; no names or e-mail addresses), and fill in the
 scoring form from `review_rubric.md`. Scores are kept on the reviewer's device
 and, if configured, synced to a Google Sheet the chair owns.
 
