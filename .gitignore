@@ -1,0 +1,5 @@
+tools/codes.json
+.claude/
+.DS_Store
+__pycache__/
+*.xlsx

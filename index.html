@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PSE9 abstract review</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">PSE9 · abstract review</div>
+  <div class="who" id="who" hidden>
+    <span id="who-name"></span>
+    <button class="link" id="guide-btn" type="button">Guide</button>
+    <button class="link" id="signout" type="button">Sign out</button>
+  </div>
+</header>
+
+<section id="login" class="login">
+  <h1>Reviewer sign-in</h1>
+  <p>Enter the reviewer code you received by email.</p>
+  <form id="login-form">
+    <input id="code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="pse9-r1-xxxx-xxxx-xxxx" required>
+    <button type="submit" id="login-btn">Open</button>
+  </form>
+  <p class="error" id="login-error" hidden></p>
+  <p class="muted small" id="login-meta"></p>
+</section>
+
+<main id="app" hidden>
+  <nav class="side">
+    <div class="progress" id="progress"></div>
+    <label class="sr-only" for="jump">Go to submission</label>
+    <select id="jump"></select>
+    <div class="navbtns">
+      <button id="prev" type="button">Previous</button>
+      <button id="next" type="button">Next</button>
+    </div>
+    <button id="next-unscored" type="button" class="wide">Next unscored</button>
+    <div class="sync">
+      <div id="sync-status" class="muted small"></div>
+      <button id="sync-now" type="button" class="small">Sync now</button>
+      <button id="export" type="button" class="small">Download my scores (CSV)</button>
+    </div>
+    <p class="muted small" id="data-meta"></p>
+  </nav>
+
+  <article class="submission">
+    <h2 id="sub-id"></h2>
+    <dl id="sub-fields"></dl>
+    <div id="sub-long"></div>
+  </article>
+
+  <form id="review" class="review" autocomplete="off"></form>
+</main>
+
+<dialog id="guide">
+  <h2>Reviewer guide</h2>
+  <p><strong>What PSE9 is looking for.</strong> Contributions on the statistical, philosophical or meta-scientific dimensions of scientific error: how errors enter the scientific record, how they are detected and corrected, how they propagate through knowledge generation, and how they shape trust in science. This edition has a particular interest in AI as a source of new errors and as a tool for finding existing ones. AI is welcome, not required.</p>
+  <p><strong>Who is in the room.</strong> Statisticians, empirical researchers, philosophers of science, methodologists and metascientists. For most of the audience the author's field is not their own.</p>
+  <p><strong>How to review.</strong></p>
+  <ul>
+    <li>Rate the abstract, not the authors. Do not look them up.</li>
+    <li>Rate what the abstract says, not what you would have done. Simple methods, small studies, conceptual pieces and work in progress are all fine if the claim is clear and the reasoning holds.</li>
+    <li>Do not rate the English. Accessibility means a reader from another field can tell what was done or argued and why it matters.</li>
+    <li>Do not penalise detail or citations that an abstract of this length cannot hold.</li>
+    <li>Your scores are advice to the programme chair, not a verdict. The chair also balances topics, disciplines and career stages.</li>
+    <li>Keep the abstracts confidential. Do not paste them into an LLM or any other external tool.</li>
+    <li>Co-authors do not score. If you think you know who the submitter is, say so and score anyway.</li>
+  </ul>
+  <p><strong>Recommendation.</strong> "Talk, top 5%" means you would be disappointed to see it as a poster. "Ask to resubmit as a hackathon" means the idea suits a hands-on session on day 3 better than a talk, for example a tool, dataset or protocol others could try out. "Reject" means off topic or not sound.</p>
+  <p class="muted">Scores are saved on this device as you go and sent to the chair's sheet when you press Save. About 10 minutes per abstract.</p>
+  <form method="dialog"><button class="primary">Close</button></form>
+</dialog>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "id": "ID",
+  "id_format": "PSE9-{:03d}",
+  "fields": [
+    {"key": "career_stage", "label": "Career stage", "match": "career stage"},
+    {"key": "job_type", "label": "Job type", "match": "job"},
+    {"key": "history", "label": "History with PSE", "match": "history"},
+    {"key": "format", "label": "Proposed format", "match": "format"},
+    {"key": "abstract", "label": "Abstract", "match": "abstract", "long": true, "required": true}
+  ]
+}
