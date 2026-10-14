@@ -1,6 +1,7 @@
 {
   "id": "ID",
   "id_format": "PSE9-{:03d}",
+  "show_first": [7],
   "fields": [
     {"key": "career_stage", "label": "Career stage", "match": "career stage"},
     {"key": "job_type", "label": "Job type", "match": "job type"},

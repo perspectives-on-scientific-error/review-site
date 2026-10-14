@@ -45,12 +45,12 @@ def read_sheet(path: str, sheet: str | None):
     ws = pick_sheet(wb, sheet)
     rows = ws.iter_rows(values_only=True)
     headers = [("" if h is None else str(h).strip()) for h in next(rows, ())]
-    data = []
-    for r in rows:
+    data = []  # (excel_row_number, values); the header is row 1
+    for n, r in enumerate(rows, start=2):
         if r is None or all(v is None or str(v).strip() == "" for v in r):
             continue
         r = list(r) + [None] * (len(headers) - len(r))
-        data.append(r)
+        data.append((n, r))
     return headers, data, ws.title, [(w.title, w.max_row, w.max_column) for w in wb.worksheets]
 
 
@@ -111,7 +111,7 @@ def main() -> None:
     required = [f["key"] for f in cols["fields"] if f.get("required")]
 
     subs, skipped = [], 0
-    for r in rows:
+    for excel_row, r in rows:
         rid = clean(r[id_col])
         if not rid:
             skipped += 1
@@ -120,7 +120,7 @@ def main() -> None:
             label = cols.get("id_format", "{}").format(int(float(rid)))
         except ValueError:
             label = rid
-        rec = {"id": label}
+        rec = {"id": label, "_row": excel_row}
         for f, ci in field_cols:
             rec[f["key"]] = clean(r[ci])
         if any(not rec[k] for k in required):
@@ -128,6 +128,19 @@ def main() -> None:
             continue
         subs.append(rec)
     subs.sort(key=lambda s: s["id"])
+
+    # "show_first": Excel row numbers from the export whose submissions every
+    # reviewer sees first, in the given order (e.g. a calibration abstract).
+    first = []
+    for want in cols.get("show_first", []):
+        hit = next((s for s in subs if s["_row"] == int(want)), None)
+        if hit is None:
+            raise SystemExit(f"show_first: no submission in Excel row {want}.")
+        print(f'Shown first: Excel row {want} -> {hit["id"]}')
+        first.append(hit)
+    subs = first + [s for s in subs if s not in first]
+    for s in subs:
+        del s["_row"]
 
     payload = {
         "fields": [{"key": f["key"], "label": f["label"], "long": bool(f.get("long"))} for f in cols["fields"]],
