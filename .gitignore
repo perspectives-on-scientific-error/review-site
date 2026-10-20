@@ -3,3 +3,4 @@ tools/codes.json
 .DS_Store
 __pycache__/
 *.xlsx
+*.csv

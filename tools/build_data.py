@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["openpyxl>=3.1", "cryptography>=42"]
 # ///
-"""Build data/submissions.enc.json from the Microsoft Forms Excel export.
+"""Build data/submissions.enc.json from the Microsoft Forms Excel export (.xlsx or .csv).
 
   uv run tools/build_data.py path/to/export.xlsx --list-columns   # see the headers
   uv run tools/build_data.py path/to/export.xlsx                  # build
@@ -13,8 +13,10 @@ e-mail addresses and every column not listed in columns.json are left out.
 """
 import argparse
 import base64
+import csv
 import datetime as dt
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -38,7 +40,30 @@ def pick_sheet(wb, sheet: str | None):
     return max(wb.worksheets, key=lambda ws: ws.max_row)
 
 
+def read_csv(path: str):
+    """A CSV saved from Excel: UTF-8 if saved as "CSV UTF-8", otherwise Windows-1252."""
+    raw = Path(path).read_bytes()
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("cp1252")
+        print("Note: CSV is not UTF-8 (read as Windows-1252). Excel has already replaced characters such as "
+              "−, ő or ć with '?'; export as .xlsx or \"CSV UTF-8\" to keep them.")
+    rows = csv.reader(io.StringIO(text, newline=""))
+    headers = [h.strip() for h in next(rows, [])]
+    data = []  # (excel_row_number, values); the header is row 1, as when the file is opened in Excel
+    for n, r in enumerate(rows, start=2):
+        if all(v.strip() == "" for v in r):
+            continue
+        r = r + [""] * (len(headers) - len(r))
+        data.append((n, r))
+    name = Path(path).stem
+    return headers, data, name, [(name, len(data) + 1, len(headers))]
+
+
 def read_sheet(path: str, sheet: str | None):
+    if path.lower().endswith(".csv"):
+        return read_csv(path)
     # Normal (not read-only) mode: it scans the cells themselves instead of
     # trusting the workbook's declared dimensions, which online exports get wrong.
     wb = load_workbook(path, data_only=True)
@@ -109,11 +134,13 @@ def main() -> None:
     for f, ci in field_cols:
         print(f'  {f["key"]:<13} <- "{headers[ci]}"')
     required = [f["key"] for f in cols["fields"] if f.get("required")]
+    # "exclude": Forms IDs never shown to reviewers (e.g. test responses).
+    excluded = {str(x) for x in cols.get("exclude", [])}
 
     subs, skipped = [], 0
     for excel_row, r in rows:
         rid = clean(r[id_col])
-        if not rid:
+        if not rid or rid in excluded:
             skipped += 1
             continue
         try:

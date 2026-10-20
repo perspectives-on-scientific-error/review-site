@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuild the encrypted submissions file from a fresh Forms export and publish it.
+# Rebuild the encrypted submissions file from a fresh Forms export (.xlsx or .csv) and publish it.
 #   ./update.sh ~/Downloads/export.xlsx
 set -euo pipefail
 cd "$(dirname "$0")"
