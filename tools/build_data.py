@@ -10,6 +10,10 @@
 Which columns are shown, and under which label, is set in tools/columns.json.
 The output is encrypted; each code in tools/codes.json can open it. Names,
 e-mail addresses and every column not listed in columns.json are left out.
+
+Each reviewer gets their own order (see reviewer_orders). The build reads who
+has scored what from the score sheet (syncUrl in config.js), so rebuilding
+also re-balances the remaining work.
 """
 import argparse
 import base64
@@ -19,6 +23,11 @@ import hashlib
 import io
 import json
 import os
+import random
+import re
+import urllib.parse
+import urllib.request
+from collections import Counter
 from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -102,6 +111,63 @@ def clean(v) -> str:
     return str(v).strip()
 
 
+def fetch_progress(codes: dict) -> dict[str, dict[str, bool]] | None:
+    """{reviewer: {submission: counts}} for every completed review in the score sheet.
+    counts is False for co-authors, who mark the submission done without scoring it.
+    None if there is no sheet or it cannot be reached."""
+    m = re.search(r"syncUrl:\s*['\"]([^'\"]+)['\"]", (ROOT / "config.js").read_text())
+    if not m:
+        return None
+    done = {}
+    try:
+        for rid, info in sorted(codes.items()):
+            q = urllib.parse.urlencode({"reviewer": rid, "token": info["token"]})
+            with urllib.request.urlopen(f"{m.group(1)}?{q}", timeout=60) as res:
+                j = json.load(res)
+            if not j.get("ok"):
+                raise RuntimeError(f"{rid}: {j.get('error')}")
+            done[rid] = {str(r["submission"]): r.get("coi") != "coauthor"
+                         for r in j.get("records", []) if str(r.get("complete")).lower() == "true"}
+    except Exception as e:  # noqa: BLE001 - any failure means: order without progress
+        print(f"Warning: could not read the score sheet ({e}); ordering as if nothing were scored yet.")
+        return None
+    return done
+
+
+def reviewer_orders(ids: list[str], pinned: list[str], reviewers: list[str], done: dict,
+                    inactive: set[str] = frozenset()) -> tuple[dict, list[int]]:
+    """One order per reviewer: the pinned submissions, then what they have already scored,
+    then the rest. The rest is dealt in turns: each reviewer takes the submission with the
+    fewest reviews so far (ties in their own fixed random order), so if everyone works at a
+    similar pace every submission gets a 1st review, then a 2nd, before any gets a 3rd.
+    Inactive reviewers are left out of the dealing; their lists start with the submissions
+    that have the fewest reviews now. Also returns, for k = 1, 2, 3, how many more scores per
+    active reviewer (besides the pinned ones) give every submission k reviews."""
+    rest = [i for i in ids if i not in pinned]
+    count = Counter(s for d in done.values() for s, counts in d.items() if counts)
+    now = Counter(count)
+    rank = {r: {s: n for n, s in enumerate(random.Random(f"pse9:{r}").sample(rest, len(rest)))} for r in reviewers}
+    todo = {r: set(rest) - set(done.get(r, {})) for r in reviewers}
+    active = [r for r in reviewers if r not in inactive]
+    picks = {r: [] for r in reviewers}
+    reached = []
+    while True:
+        while len(reached) < 3 and rest and min(count[s] for s in rest) > len(reached):
+            reached.append(max(len(picks[r]) for r in active))
+        if not any(todo[r] for r in active):
+            break
+        for r in active:
+            if todo[r]:
+                s = min(todo[r], key=lambda s: (count[s], rank[r][s]))
+                todo[r].remove(s)
+                picks[r].append(s)
+                count[s] += 1
+    for r in inactive:
+        picks[r] = sorted(todo[r], key=lambda s: (now[s], rank[r][s]))
+    orders = {r: pinned + [s for s in rest if s in done.get(r, {})] + picks[r] for r in reviewers}
+    return orders, reached
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("xlsx")
@@ -110,6 +176,8 @@ def main() -> None:
     ap.add_argument("--out", default=str(ROOT / "data" / "submissions.enc.json"))
     ap.add_argument("--columns", default=str(HERE / "columns.json"))
     ap.add_argument("--codes", default=str(HERE / "codes.json"))
+    ap.add_argument("--inactive", default="", help="reviewers who have stopped, e.g. R5,R6: the others' "
+                    "orders are balanced without them")
     a = ap.parse_args()
 
     headers, rows, used, sheets = read_sheet(a.xlsx, a.sheet)
@@ -169,9 +237,21 @@ def main() -> None:
     for s in subs:
         del s["_row"]
 
+    done = fetch_progress(codes) or {}
+    if done:
+        print("Already scored (complete):", ", ".join(f"{r} {len(d)}" for r, d in sorted(done.items())))
+    inactive = {r.strip().upper() for r in a.inactive.split(",") if r.strip()}
+    if inactive - set(codes):
+        raise SystemExit(f"--inactive: unknown reviewer(s) {', '.join(sorted(inactive - set(codes)))}.")
+    orders, reached = reviewer_orders([s["id"] for s in subs], [s["id"] for s in first], sorted(codes), done, inactive)
+    who = "each reviewer" if not inactive else f"each reviewer except {', '.join(sorted(inactive))}"
+    for k, n in enumerate(reached, start=1):
+        print(f"Every submission has {k} review{'s' if k > 1 else ''} once {who} scores {n} more (besides the pinned one).")
+
     payload = {
         "fields": [{"key": f["key"], "label": f["label"], "long": bool(f.get("long"))} for f in cols["fields"]],
         "submissions": subs,
+        "order": orders,
     }
     plain = json.dumps(payload, ensure_ascii=False).encode()
     data_key = AESGCM.generate_key(bit_length=256)

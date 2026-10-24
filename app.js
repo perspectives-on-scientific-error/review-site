@@ -124,6 +124,17 @@ function isComplete(rec) {
 }
 
 // ---------- submissions ----------
+// Each reviewer has their own order (tools/build_data.py), so that every
+// submission gets reviews early even if not everyone finishes.
+function orderFor(payload, rid) {
+  const order = payload.order && payload.order[rid];
+  if (!order) return payload.submissions;
+  const byId = new Map(payload.submissions.map((s) => [s.id, s]));
+  const listed = new Set(order);
+  return order.map((id) => byId.get(id)).filter(Boolean)
+    .concat(payload.submissions.filter((s) => !listed.has(s.id)));
+}
+
 const currentSub = () => state.submissions[state.current];
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
@@ -432,7 +443,7 @@ async function signIn(code, { remembered = false } = {}) {
     state.token = token;
     state.builtAt = pkg.built_at;
     state.fields = payload.fields;
-    state.submissions = payload.submissions;
+    state.submissions = orderFor(payload, reviewer);
     state.scores = loadScores();
     remember(code.trim());
     await pullRemote();

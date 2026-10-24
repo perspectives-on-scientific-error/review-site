@@ -1,7 +1,7 @@
 {
   "id": "ID",
   "id_format": "PSE9-{:03d}",
-  "show_first": [8],
+  "show_first": [7],
   "exclude": [1],
   "fields": [
     {"key": "career_stage", "label": "Career stage", "match": "career stage"},

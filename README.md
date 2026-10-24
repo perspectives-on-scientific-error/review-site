@@ -57,6 +57,22 @@ Submission IDs come from the Forms `ID` column, so they stay stable across
 exports and existing scores keep pointing at the right abstract. Rows without
 an abstract are skipped.
 
+## Review order
+
+Each reviewer gets their own order, so that every submission is reviewed early
+even if not everyone finishes. After the `show_first` submissions, the build
+deals the rest in turns: each reviewer takes the submission with the fewest
+reviews so far. The build prints how far everyone needs to get, e.g. "Every
+submission has 2 reviews once each reviewer scores 29 more".
+
+The build reads who has scored what from the score sheet, so running
+`./update.sh <file>` again re-balances the remaining work. If someone has
+stopped reviewing, leave them out so the others' lists cover their share:
+```bash
+./update.sh ~/Downloads/export.xlsx --inactive R5,R6
+```
+Without `--inactive` the build assumes everyone keeps going at the same pace.
+
 ## Reading the scores
 
 Export the `scores` tab of the Google Sheet as CSV (File > Download > CSV) and
