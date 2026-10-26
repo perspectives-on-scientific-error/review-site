@@ -208,6 +208,10 @@ def main() -> None:
     subs, skipped = [], 0
     for excel_row, r in rows:
         rid = clean(r[id_col])
+        if not rid and any(clean(r[ci]) for f, ci in field_cols if f.get("required")):
+            # Typically a row added by hand. Its ID must never collide with a later Forms ID.
+            print(f"Warning: Excel row {excel_row} has no ID and is left out. Give it one Forms "
+                  "will never use, e.g. PSE9-M01.")
         if not rid or rid in excluded:
             skipped += 1
             continue
@@ -275,10 +279,10 @@ def main() -> None:
         "iv": b64(iv),
         "ciphertext": b64(ciphertext),
     }
-    out = Path(a.out)
+    out = Path(a.out).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(pkg, indent=1) + "\n")
-    print(f"Wrote {out.relative_to(ROOT)}: {len(subs)} submissions, {skipped} rows skipped, {len(keys)} reviewer keys.")
+    print(f"Wrote {out.relative_to(ROOT) if out.is_relative_to(ROOT) else out}: {len(subs)} submissions, {skipped} rows skipped, {len(keys)} reviewer keys.")
 
 
 if __name__ == "__main__":
