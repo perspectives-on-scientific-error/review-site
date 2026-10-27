@@ -47,6 +47,12 @@ const FORM = {
       ['hackathon', 'Ask to resubmit as a hackathon'],
       ['reject', 'Reject'],
     ],
+    // By proposed format: options not offered, and labels that read differently.
+    // The stored value stays the same, so "hackathon" always means "as a hackathon".
+    byFormat: [
+      { match: /^poster/i, hide: ['talk_top', 'talk'] },
+      { match: /^hackathon/i, labels: { hackathon: 'Accept as hackathon' } },
+    ],
   },
   confidence: {
     label: 'Confidence in this recommendation',
@@ -157,6 +163,7 @@ function renderSubmission() {
       dl.append(el('dt', { text: f.label }), el('dd', { text: v || 'not given' }));
     }
   }
+  adaptRecommendation(s);
   fillForm(state.scores[s.id]);
   $('jump').value = String(state.current);
   $('prev').disabled = state.current === 0;
@@ -242,6 +249,16 @@ function buildForm() {
   $('save-next').addEventListener('click', () => save(true));
 }
 
+function adaptRecommendation(s) {
+  const R = FORM.recommendation;
+  const rule = R.byFormat.find((r) => r.match.test((s.format || '').trim())) || {};
+  for (const [val, text] of R.options) {
+    const label = $('review').querySelector(`input[name="recommendation"][value="${val}"]`).closest('label');
+    label.hidden = (rule.hide || []).includes(val);
+    label.querySelector('span').textContent = (rule.labels || {})[val] || text;
+  }
+}
+
 function readForm() {
   const f = $('review');
   const rec = {};
@@ -264,7 +281,7 @@ function fillForm(rec) {
       if (k === 'note') $('note').value = rec.note || '';
       else if (rec[k]) {
         const r = f.querySelector(`input[name="${k}"][value="${rec[k]}"]`);
-        if (r) r.checked = true;
+        if (r && !r.closest('label').hidden) r.checked = true;
       }
     }
   }
