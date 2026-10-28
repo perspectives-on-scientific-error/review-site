@@ -37,6 +37,7 @@
       <button id="next" type="button">Next</button>
     </div>
     <button id="next-unscored" type="button" class="wide">Next unscored</button>
+    <button id="overview-btn" type="button" class="wide">Overview</button>
     <div class="sync">
       <div id="sync-status" class="muted small"></div>
       <button id="sync-now" type="button" class="small">Sync now</button>
@@ -53,6 +54,17 @@
 
   <form id="review" class="review" autocomplete="off"></form>
 </main>
+
+<dialog id="overview">
+  <div class="ov-head">
+    <h2>My scores</h2>
+    <form method="dialog"><button>Close</button></form>
+  </div>
+  <p class="muted small">Click a row to open that submission and change your scores.</p>
+  <div class="ov-counts" id="ov-counts"></div>
+  <p id="ov-empty" class="muted" hidden>Nothing scored yet.</p>
+  <div class="ov-wrap"><table id="ov-table"></table></div>
+</dialog>
 
 <dialog id="guide">
   <h2>Reviewer guide</h2>

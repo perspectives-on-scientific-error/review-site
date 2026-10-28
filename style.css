@@ -56,6 +56,19 @@ textarea { width: 100%; min-height: 80px; font: inherit; padding: 8px; border: 1
 dialog { max-width: 640px; border: 1px solid var(--line); border-radius: 10px; padding: 24px 28px; color: var(--ink); }
 dialog::backdrop { background: rgba(0, 0, 0, .35); }
 dialog h2 { margin-top: 0; }
+#overview { max-width: 1100px; width: calc(100% - 32px); }
+.ov-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.ov-counts { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 14px; font-size: 14px; }
+.ov-wrap { overflow-x: auto; }
+#ov-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+#ov-table th, #ov-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+#ov-table th { font-size: 12.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+#ov-table .num { text-align: center; }
+#ov-table td:first-child { white-space: nowrap; }
+#ov-table td.title { min-width: 260px; }
+#ov-table .fmt { display: block; color: var(--muted); font-size: 12.5px; }
+#ov-table tbody tr { cursor: pointer; }
+#ov-table tbody tr:hover { background: var(--bg); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .status-ok { color: var(--ok); }
 .status-warn { color: var(--warn); }
@@ -63,4 +76,9 @@ dialog h2 { margin-top: 0; }
 @media (max-width: 1000px) {
   main { grid-template-columns: 1fr; }
   .side { position: static; }
+}
+@media (max-width: 600px) {
+  dialog { padding: 18px 16px; }
+  #ov-table td.title { min-width: 180px; }
+  #ov-table th, #ov-table td { padding: 6px 5px; }
 }

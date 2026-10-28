@@ -17,22 +17,22 @@ const FORM = {
   },
   criteria: [
     {
-      key: 'fit', label: 'Fit with PSE',
+      key: 'fit', label: 'Fit with PSE', short: 'Fit',
       question: 'Is this about scientific error in the sense of the call?',
       anchors: ['Not about scientific error', 'Related; the link to error is indirect or left to infer', 'Squarely on topic'],
     },
     {
-      key: 'accessibility', label: 'Interdisciplinary accessibility',
+      key: 'accessibility', label: 'Interdisciplinary accessibility', short: 'Accessibility',
       question: 'Can someone from a different discipline understand the question, what was done or argued, and the main claim?',
       anchors: ['Only a specialist could follow it', 'Main idea comes across; parts need background the room will not have', 'Fully accessible to the whole room'],
     },
     {
-      key: 'quality', label: 'Scientific quality',
+      key: 'quality', label: 'Scientific quality', short: 'Quality',
       question: 'Does this work seem to be of high scientific quality?',
       anchors: ['Claim not supported, or a clear flaw', 'Plausible, with open questions', 'Convincing and careful'],
     },
     {
-      key: 'novelty', label: 'Novelty and contribution',
+      key: 'novelty', label: 'Novelty and contribution', short: 'Novelty',
       question: 'Does it add something: a new result, dataset, method, tool, argument or perspective?',
       anchors: ['Repeats what is known', 'Modest or incremental addition', 'Clearly new, or a fresh angle on a known problem'],
     },
@@ -40,11 +40,12 @@ const FORM = {
   recommendation: {
     label: 'Recommendation',
     hint: 'Capacity: 12 contributed talks, up to 84 posters (42 per session, two sessions) and about 6 to 10 hackathon sessions. Poster space is not scarce, so recommend Reject only for lack of quality or fit, never for space.',
+    // [value, label, short label for the overview]
     options: [
-      ['talk_top', 'Talk, top 5% of submissions'],
+      ['talk_top', 'Talk, top 5% of submissions', 'Talk, top 5%'],
       ['talk', 'Talk'],
       ['poster', 'Poster'],
-      ['hackathon', 'Ask to resubmit as a hackathon'],
+      ['hackathon', 'Ask to resubmit as a hackathon', 'Hackathon'],
       ['reject', 'Reject'],
     ],
     // By proposed format: options not offered, and labels that read differently.
@@ -200,6 +201,62 @@ function goNextUnscored() {
     if (!rec || !rec.complete) { goTo(i); return; }
   }
   setSaveStatus('All submissions scored.');
+}
+
+// ---------- overview of my scores ----------
+function opening(s) {
+  const first = String(s.abstract || '').trim().split('\n')[0].trim();
+  return first.length > 140 ? first.slice(0, 140).replace(/\s+\S*$/, '') + '…' : first;
+}
+
+function openOverview() {
+  const R = FORM.recommendation;
+  const recIndex = (rec) => (rec.complete && rec.coi !== 'coauthor' ? R.options.findIndex(([v]) => v === rec.recommendation) : R.options.length);
+  const mean = (rec) => FORM.criteria.reduce((sum, c) => sum + (Number(rec[c.key]) || 0), 0) / FORM.criteria.length;
+  const rows = state.submissions.map((s, i) => ({ s, i, rec: state.scores[s.id] })).filter((r) => r.rec);
+  rows.sort((a, b) => recIndex(a.rec) - recIndex(b.rec) || mean(b.rec) - mean(a.rec));
+
+  const counts = $('ov-counts');
+  counts.innerHTML = '';
+  const complete = rows.filter((r) => r.rec.complete);
+  counts.append(el('span', { text: `${complete.length} of ${state.submissions.length} scored` }));
+  for (const [val, text, short] of R.options) {
+    const n = complete.filter((r) => r.rec.coi !== 'coauthor' && r.rec.recommendation === val).length;
+    counts.append(el('span', {}, [`${short || text}: `, el('b', { text: String(n) })]));
+  }
+  const coauthor = complete.filter((r) => r.rec.coi === 'coauthor').length;
+  if (coauthor) counts.append(el('span', {}, ['Co-author: ', el('b', { text: String(coauthor) })]));
+
+  const table = $('ov-table');
+  table.innerHTML = '';
+  table.append(el('thead', {}, el('tr', {}, [
+    el('th', { text: 'ID' }), el('th', { text: 'Submission' }),
+    ...FORM.criteria.map((c) => el('th', { class: 'num', title: c.label, text: c.short })),
+    el('th', { text: 'Recommendation' }),
+  ])));
+  const body = el('tbody');
+  for (const { s, i, rec } of rows) {
+    const open = () => { $('overview').close(); goTo(i); };
+    let verdict;
+    if (!rec.complete) verdict = el('span', { class: 'muted', text: 'Incomplete' });
+    else if (rec.coi === 'coauthor') verdict = el('span', { class: 'muted', text: 'Co-author, not scored' });
+    else {
+      const o = R.options.find(([v]) => v === rec.recommendation);
+      verdict = o ? (o[2] || o[1]) : rec.recommendation;
+    }
+    const tr = el('tr', {}, [
+      el('td', {}, el('button', { type: 'button', class: 'link', text: s.id })),
+      el('td', { class: 'title' }, [opening(s), el('span', { class: 'fmt', text: s.format || '' })]),
+      ...FORM.criteria.map((c) => el('td', { class: 'num', text: rec[c.key] || '–' })),
+      el('td', {}, verdict),
+    ]);
+    tr.addEventListener('click', open);
+    body.append(tr);
+  }
+  table.append(body);
+  $('ov-empty').hidden = rows.length > 0;
+  table.hidden = rows.length === 0;
+  $('overview').showModal();
 }
 
 // ---------- the form ----------
@@ -502,6 +559,7 @@ function init() {
   $('prev').addEventListener('click', () => goTo(state.current - 1));
   $('next').addEventListener('click', () => goTo(state.current + 1));
   $('next-unscored').addEventListener('click', goNextUnscored);
+  $('overview-btn').addEventListener('click', openOverview);
   $('sync-now').addEventListener('click', syncAll);
   $('export').addEventListener('click', exportCsv);
   if (!window.isSecureContext) {
